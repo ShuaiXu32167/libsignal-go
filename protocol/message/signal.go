@@ -103,6 +103,37 @@ func NewSignalFromBytes(bytes []byte) (Ciphertext, error) {
 	}, nil
 }
 
+func NewSignalFromBytesUnsafe(bytes []byte) (Ciphertext, error) {
+	if len(bytes) == 0 {
+		return nil, errors.New("message too short")
+	}
+
+	version := bytes[0] >> 4
+	if int(version) != CiphertextVersion {
+		return nil, fmt.Errorf("unsupported message version: %d != %d", int(version), CiphertextVersion)
+	}
+
+	var message v1.SignalMessage
+	err := proto.Unmarshal(bytes[1:len(bytes)-macSize], &message)
+	if err != nil {
+		return nil, err
+	}
+
+	senderRatchetKey, err := curve.NewPublicKey(message.GetRatchetKey())
+	if err != nil {
+		return nil, err
+	}
+
+	return &Signal{
+		version:          version,
+		senderRatchetKey: senderRatchetKey,
+		previousCounter:  message.GetPreviousCounter(),
+		counter:          message.GetCounter(),
+		ciphertext:       message.GetCiphertext(),
+		serialized:       bytes,
+	}, nil
+}
+
 func (*Signal) Type() CiphertextType {
 	return WhisperType
 }
