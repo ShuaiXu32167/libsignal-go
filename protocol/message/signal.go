@@ -109,9 +109,6 @@ func NewSignalFromBytesUnsafe(bytes []byte) (Ciphertext, error) {
 	}
 
 	version := bytes[0] >> 4
-	if int(version) != CiphertextVersion {
-		return nil, fmt.Errorf("unsupported message version: %d != %d", int(version), CiphertextVersion)
-	}
 
 	var message v1.SignalMessage
 	err := proto.Unmarshal(bytes[1:len(bytes)-macSize], &message)
